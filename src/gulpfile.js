@@ -53,7 +53,7 @@ function commitTask(done) {
 }
 
 function defaultTask(done) {
-    // removeAllFilesTask(done);
+    removeAllFilesTask(done);
     publishTask(done);
     commitTask(done);
     done();

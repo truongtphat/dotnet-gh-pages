@@ -1,11 +1,11 @@
 {
     "git": {
         "branch": "deploy",
-        "repo": "https://github.com/truongtphat/pyton-dotnet.git"
+        "repo": "https://github.com/your_repo.git"
     },
     "msbuild": {
-        "publishFolder": "wineme",
+        "publishFolder": "your_folder",
         "publishProfile": "FolderProfile.pubxml",
-        "projectFilePath": "F:/Mixstudio/wineme.today/source/mix.core/src/Mix.Cms.Web/Mixcore.csproj"
+        "projectFilePath": "F:/your_projec.csproj"
     }
 }
