@@ -104,4 +104,7 @@ dist
 .tern-port
 
 # Deploy folder
-deploy/
+deploy/**
+
+# config
+config.json

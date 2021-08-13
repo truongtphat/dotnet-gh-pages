@@ -1,66 +1,90 @@
-const path = require('path');
 const rimraf = require("rimraf");
-const ghpages = require('gh-pages');
+const githubPages = require('gh-pages');
 const msbuild = require('msbuild');
-const config = require('./gulp-config');
-const { series } = require('gulp');
+const config = require('./config');
+const fileUtils = require('./file-utils');
 
-const publishFolder = path.resolve(`../deploy/${config.msbuild.publishFolder}`);
+// const msbConfig = config.msbuild();
+// const gitConfig = config.git();
 
-function initMsbuild() {
-    const msb = new msbuild();
-    msb.version = '16.0'
-    msb.configuration = 'Release';
-    msb.sourcePath = config.msbuild.projectFilePath;
-    msb.publishProfile = config.msbuild.publishProfile;
+function initConfigFileTask(done) {
+    if (!fileUtils.exists(config.filePath)) {
+        fileUtils.copy(config.fileExample, config.filePath);
+    } else {
+        console.log('config file was created');
+    }
 
-    // ignore logging information.
-    msb.overrideParams.push('/clp:ErrorsOnly');
-
-    return msb;
-}
-
-function removeAllFilesTask(done) {
-    rimraf(publishFolder, () => { console.log("done"); });
     done();
 }
 
 function buildTask(done) {
-    initMsbuild().build();
+    const msb = initMsBuild();
+    msb.build();
+
     done();
 }
 
-function publishTask(done) {
-    const msb = initMsbuild();
-
-    // custom publish url.
-    msb.overrideParams.push(`/p:PublishUrl=${publishFolder}`);
+function deployTask(done) {
+    const msb = initMsBuild();
+    msb.overrideParams.push(msbConfig.parameter.publishurl);
     msb.publish();
+
     done();
 }
 
 function commitTask(done) {
-    ghpages.publish(publishFolder, {
-        branch: config.git.branch,
-        repo: config.git.repo,
+    githubPages.publish(publishFolder, {
+        branch: gitConfig.branch,
+        repo: gitConfig.repo,
         message: `committed ${new Date()}`
     }, () => {
-        console.log('Finished publishing to github pages');
+        console.log('finished publishing to github pages');
     }, err => {
-        console.log('Pubish github error:', err)
+        console.log('pubish github error:', err)
     });
     done();
 }
 
-function defaultTask(done) {
-    removeAllFilesTask(done);
-    publishTask(done);
-    commitTask(done);
+function argvTask(done) {
+    console.log(process.argv);
     done();
 }
 
+function defaultTask(done) {
+    removeFilesInDeployFolderTask(done);
+    deployTask(done);
+    commitTask(done);
+
+    done();
+}
+
+function initMsBuild() {
+    const msb = new msbuild();
+    msb.version = msbConfig.version;
+    msb.configuration = msbConfig.configuration;
+    msb.sourcePath = msbConfig.projectFilePath;
+
+    if (fileUtils.exists(msbConfig.projectFilePath)) {
+        msb.publishProfile = msbConfig.publishProfile;
+    }
+
+    msb.overrideParams.push(msbConfig.parameter.errorsOnly);
+
+    return msb;
+}
+
+function removeFilesInDeployFolderTask(done) {
+    rimraf(msbConfig.deployFolder, err => {
+        console.log(err);
+    });
+    done();
+}
+
+exports.argv = argvTask;
 exports.build = buildTask;
-exports.publish = publishTask;
+exports.publish = deployTask;
 exports.commit = commitTask;
-exports.removeFile = removeAllFilesTask;
+exports.removeFile = removeFilesInDeployFolderTask;
+exports.initConfigFile = initConfigFileTask;
+
 exports.default = defaultTask;
