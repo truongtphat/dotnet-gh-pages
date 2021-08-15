@@ -1,90 +1,85 @@
+const fs = require('fs');
 const rimraf = require("rimraf");
 const githubPages = require('gh-pages');
-const msbuild = require('msbuild');
+const microsoftBuild = require('msbuild');
 const config = require('./config');
-const fileUtils = require('./file-utils');
 
-// const msbConfig = config.msbuild();
-// const gitConfig = config.git();
-
-function initConfigFileTask(done) {
-    if (!fileUtils.exists(config.filePath)) {
-        fileUtils.copy(config.fileExample, config.filePath);
+function createConfigFile() {
+    if (!fs.existsSync(config.configFilePath)) {
+        fs.copyFileSync(config.configExampleFilePath, config.configFilePath);
     } else {
-        console.log('config file was created');
+        console.log('config.json file was created');
     }
-
-    done();
 }
 
-function buildTask(done) {
-    const msb = initMsBuild();
-    msb.build();
-
-    done();
-}
-
-function deployTask(done) {
-    const msb = initMsBuild();
-    msb.overrideParams.push(msbConfig.parameter.publishurl);
-    msb.publish();
-
-    done();
-}
-
-function commitTask(done) {
-    githubPages.publish(publishFolder, {
-        branch: gitConfig.branch,
-        repo: gitConfig.repo,
-        message: `committed ${new Date()}`
-    }, () => {
-        console.log('finished publishing to github pages');
-    }, err => {
-        console.log('pubish github error:', err)
+function clearDeployFolder() {
+    rimraf(config.msb.deployFolderPath, err => {
+        if (err) {
+            console.log(err);
+        }
     });
-    done();
 }
 
-function argvTask(done) {
-    console.log(process.argv);
-    done();
+function deploy() {
+    const msb = initMicrosoftBuild();
+    msb.overrideParams.push(config.msb.parameter.publishUrl);
+    msb.publish();
 }
 
-function defaultTask(done) {
-    removeFilesInDeployFolderTask(done);
-    deployTask(done);
-    commitTask(done);
-
-    done();
+function commit() {
+    githubPages.publish(config.msb.deployFolderPath, {
+        branch: config.git.branch,
+        repo: config.git.repo,
+        message: `committed ${new Date()}`
+    });
 }
 
-function initMsBuild() {
-    const msb = new msbuild();
-    msb.version = msbConfig.version;
-    msb.configuration = msbConfig.configuration;
-    msb.sourcePath = msbConfig.projectFilePath;
+function initMicrosoftBuild() {
+    const msb = new microsoftBuild();
+    msb.version = config.msb.version;
+    msb.configuration = config.msb.configuration;
+    msb.sourcePath = config.msb.projectFilePath;
 
-    if (fileUtils.exists(msbConfig.projectFilePath)) {
-        msb.publishProfile = msbConfig.publishProfile;
+    if (fs.existsSync(config.msb.projectFilePath)) {
+        msb.publishProfile = config.msb.publishProfile;
     }
 
-    msb.overrideParams.push(msbConfig.parameter.errorsOnly);
+    msb.overrideParams.push(config.msb.parameter.errorsOnly);
 
     return msb;
 }
 
-function removeFilesInDeployFolderTask(done) {
-    rimraf(msbConfig.deployFolder, err => {
-        console.log(err);
-    });
+function createConfigFileTask(done) {
+    createConfigFile();
     done();
 }
 
-exports.argv = argvTask;
-exports.build = buildTask;
-exports.publish = deployTask;
-exports.commit = commitTask;
-exports.removeFile = removeFilesInDeployFolderTask;
-exports.initConfigFile = initConfigFileTask;
+function deployTask(done) {
+    clearDeployFolder();
+    deploy();
+    done();
+}
 
+function commitTask(done) {
+    commit();
+    done();
+}
+
+function clearDeployFolderTask(done) {
+    clearDeployFolder();
+    done();
+}
+
+function defaultTask(done) {
+    clearDeployFolder();
+    deploy();
+    commit();
+
+    done();
+}
+
+exports.createConfigFile = createConfigFileTask;
+exports.clearDeployFolder = clearDeployFolderTask;
+exports.deploy = deployTask;
+exports.commit = commitTask;
 exports.default = defaultTask;

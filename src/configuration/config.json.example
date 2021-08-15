@@ -3,14 +3,10 @@
         "branch": "deploy",
         "repo": "https://github.com/your_repo.git"
     },
-    "msbuild": {
-        "publishFolder": "wineme",
-        "publishProfile": "FolderProfile.pubxml",
-        "projectFileName": "Mixcore.csproj",
-        "projectFolder": "F:/Mixstudio/wineme.today/source/mix.core/src/Mix.Cms.Web"
-    },
-    "ignorePublishingFile": [
-        "web.config",
-        "appsettings.json"
-    ]
+    "msb": {
+        "deployFolderName": "deploy_folder_name",
+        "deployProfile": "FolderProfile.pubxml",
+        "projectFileName": "project_name.csproj",
+        "projectFolder": "F:/project_folder"
+    }
 }
